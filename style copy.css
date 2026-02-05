@@ -1,13 +1,9 @@
-:root {
-  --row-height: 22px; /* change this once to adjust everything */
-}
-
 body {
   margin: 0;
   background: #111;
   color: #eee;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 #navBar {
@@ -44,15 +40,14 @@ body {
 #gridContainer {
   display: flex;
   height: calc(100vh - 44px);
-  overflow-y: auto; /* allow vertical scrolling */
-  overflow-x: hidden; /* keep horizontal locked */
+  overflow: hidden;
 }
 
 #labelColumn {
   width: 40px;
   display: grid;
-  grid-template-rows: repeat(32, var(--row-height));
-  row-gap: 4px;
+  grid-template-rows: repeat(32, 18px);
+  gap: 2px;
   padding-top: 4px;
   font-size: 12px;
   user-select: none;
@@ -61,8 +56,8 @@ body {
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 70px);
-  grid-template-rows: repeat(32, var(--row-height));
-  gap: 4px;
+  grid-template-rows: repeat(32, 18px);
+  gap: 2px;
   padding: 4px;
 }
 
@@ -72,7 +67,7 @@ body {
 
 .stepBtn {
   width: 70px;
-  height: var(--row-height);
+  height: 18px;
   border-radius: 3px;
   background: #222;
   border: 1px solid #333;
@@ -105,12 +100,10 @@ body {
 
 #labelColumn > div {
   width: 100%;
-  height: var(--row-height);
+  height: 18px;
   display: flex;
-  justify-content: flex-end;
-  padding-right: 4px; /* optional, feels nice */
-  align-items: flex-end;
-  padding-bottom: 1px; /* optional micro‑tweak */
+  justify-content: center;
+  align-items: center;
   box-sizing: border-box;
   border-radius: 3px;
   background: transparent;
