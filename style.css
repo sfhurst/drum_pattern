@@ -1,5 +1,5 @@
 :root {
-  --row-height: 22px; /* change this once to adjust everything */
+  --row-height: 30px; /* change this once to adjust everything */
 }
 
 body {
@@ -48,20 +48,10 @@ body {
   overflow-x: hidden; /* keep horizontal locked */
 }
 
-#labelColumn {
-  width: 40px;
-  display: grid;
-  grid-template-rows: repeat(32, var(--row-height));
-  row-gap: 4px;
-  padding-top: 4px;
-  font-size: 12px;
-  user-select: none;
-}
-
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 70px);
-  grid-template-rows: repeat(32, var(--row-height));
+  grid-template-columns: 40px repeat(4, 70px); /* label + 4 steps */
+  grid-template-rows: repeat(16, var(--row-height));
   gap: 4px;
   padding: 4px;
 }
@@ -76,6 +66,10 @@ body {
   border-radius: 3px;
   background: #222;
   border: 1px solid #333;
+}
+
+.eighthRow {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .kickOn {
@@ -103,17 +97,18 @@ body {
   border-bottom: 2px solid #444;
 }
 
-#labelColumn > div {
+.labelCell {
   width: 100%;
   height: var(--row-height);
   display: flex;
   justify-content: flex-end;
-  padding-right: 4px; /* optional, feels nice */
   align-items: flex-end;
-  padding-bottom: 1px; /* optional micro‑tweak */
-  box-sizing: border-box;
-  border-radius: 3px;
+  padding-right: 4px;
+  padding-bottom: 1px;
+  font-family: monospace;
+  font-size: 12px;
+  user-select: none;
   background: transparent;
   border: none;
-  user-select: none;
+  box-sizing: border-box;
 }

@@ -24,8 +24,7 @@ const engines = {
         0.5,0,0,0.5, 0,0,0,0.5
         // Lofi almost never hits on 4
       ],
-      16: [],
-      8: [],
+      
     },
     boom: {
       32: [
@@ -45,8 +44,7 @@ const engines = {
         0, 0, 1.5, 0.5,   // 24–27: avoid kick on 25 (step 24)
         0, 0, 0, 0  // 28–31: end-of-bar syncopation
       ],
-      16: [],
-      8: [],
+      
     },
     dilla: {
       32: [
@@ -66,8 +64,7 @@ const engines = {
         0.5, 0.5, 1.5, 0.5, // 24–27: Dilla often avoids a strong 4
         1.5, 0.5, 1, 0.5    // 28–31: late-bar anchor kick
       ],
-      16: [],
-      8: [],
+      
     },
     romil: {
       32: [
@@ -87,8 +84,7 @@ const engines = {
         0, 0, 1, 0,      // 24–27: real late-bar kick on step 26
         0, 0, 0.5, 0       // 28–31: clean tail
       ],
-      16: [],
-      8: [],
+      
     },
     dre: {
       32: [
@@ -108,8 +104,7 @@ const engines = {
         0, 0, 1.5, 0,      // 24–27: syncopated kick on step 26
         0, 0, 0, 0       // 28–31: clean tail
       ],
-      16: [],
-      8: [],
+      
     },
   },
 
@@ -132,8 +127,7 @@ const engines = {
         1,0,0,0, 0,0,0,0
         // Strong backbeat on 24, no chatter
       ],
-      16: [],
-      8: [],
+      
     },
     boom: {
       32: [
@@ -153,8 +147,7 @@ const engines = {
         1, 0.5, 0.5, 1.5,   // 24–27: snare on 24, optional ghost after
         0, 0, 0.5, 0.5      // 28–31: usually blank
       ],
-      16: [],
-      8: [],
+      
     },
     dilla: {
       32: [
@@ -174,8 +167,7 @@ const engines = {
         1, 0.5, 1.5, 0.5,   // 24–27: snare on 24, again often LATE
         0.5, 0.5, 1.5, 0.5    // 28–31: Dilla sometimes drags into the next bar
       ],
-      16: [],
-      8: [],
+      
     },
     romil: {
       32: [
@@ -195,8 +187,7 @@ const engines = {
         1, 1.5, 0, 0,      // 24–27: space before final snare
         0, 0, 1, 0     // 28–31: ghost → flam → snare on beat 4
       ],
-      16: [],
-      8: [],
+      
     },
     dre: {
       32: [
@@ -216,8 +207,7 @@ const engines = {
         1, 0.5, 0, 0,      // 24–27: no ghosting (West Coast stays clean)
         0, 0, 0, 0       // 28–31: snare on beat 4, no flam
       ],
-      16: [],
-      8: [],
+      
     },
   },
   hat: {
@@ -229,8 +219,7 @@ const engines = {
         0.5,0,0.5,0, 0.5,0,0.5,0,
         0.5,0,0.5,0, 0.5,0,0.5,0
       ],
-      16: [],
-      8: [],
+      
     },
     boom: {
       32: [
@@ -240,8 +229,7 @@ const engines = {
         1,0, 1,0, 1,0, 1,0,
         1,0, 1,0, 1,0, 1,0
       ],
-      16: [],
-      8: [],
+      
     },
     dilla: {
       32: [
@@ -252,8 +240,7 @@ const engines = {
         1,0.5, 1,0.5, 1,0.5, 1,0.5,
         1,0.5, 1,0.5, 1,0.5, 1,0.5
       ],
-      16: [],
-      8: [],
+      
     },
     romil: {
       32: [
@@ -273,8 +260,7 @@ const engines = {
         1, 0.5, 1.5, 0.5,    // 24–27: keep the modern feel
         1, 0.5, 1.5, 0.5     // 28–31: final ghost option
       ],
-      16: [],
-      8: [],
+      
     },
     dre: {
       32: [
@@ -294,35 +280,7 @@ const engines = {
         1, 0, 1, 0,      // 24–27: keep the pocket tight
         1, 0, 1, 0       // 28–31: no ghosting, no variation
       ],
-      16: [],
-      8: [],
+      
     },
   },
 }
-
-// Derive 16th and 8th resolution maps from 32nd maps
-function deriveResolutionMaps() {
-  for (const instrument in engines) {
-    for (const style in engines[instrument]) {
-      const base32 = engines[instrument][style]["32"];
-
-      // 8th notes: keep only steps 0, 8, 16, 24
-      const map8 = base32.map((v, i) => (i % 8 === 0 ? v : 0));
-
-      // 16th notes: keep only steps 0, 2, 4, 6, ...
-      const map16 = base32.map((v, i) => {
-        if (i % 2 !== 0) return 0; // only even indices survive
-
-        // preserve 1, 0.5, and 1.5
-        if (v === 1 || v === 0.5 || v === 1.5) return v;
-
-        return 0;
-      });
-
-      engines[instrument][style]["16"] = map16;
-      engines[instrument][style]["8"] = map8;
-    }
-  }
-}
-
-deriveResolutionMaps();

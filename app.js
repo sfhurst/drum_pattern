@@ -1,3 +1,7 @@
+////////////////////////////////////////////////////////////////////////// Variables
+
+//////////////////////////////////////////////////////////////////////////
+// UI ELEMENTS — top nav buttons
 const styleBtn = document.getElementById("styleBtn");
 const resBtn = document.getElementById("resBtn");
 const playBtn = document.getElementById("playBtn");
@@ -6,146 +10,99 @@ const kickBtn = document.getElementById("kickBtn");
 const snareBtn = document.getElementById("snareBtn");
 const hatBtn = document.getElementById("hatBtn");
 
+//////////////////////////////////////////////////////////////////////////
+// GRID ELEMENTS
 const kickGrid = document.getElementById("kickGrid");
 const snareGrid = document.getElementById("snareGrid");
 const hatGrid = document.getElementById("hatGrid");
 
 const labelColumn = document.getElementById("labelColumn");
 
-let currentPage = "kick";
-let currentStyle = "rand";
-let currentRes = 16;
-let labelMode = "res";
+//////////////////////////////////////////////////////////////////////////
+// APP STATE
+let currentPage = "kick"; // which instrument page is visible
+let currentStyle = "rand"; // user-facing style selection
+let labelMode = "res"; // label rendering mode
 
+//////////////////////////////////////////////////////////////////////////
+// OVERLAY MODES (per-instrument)
 let kickOverlayMode = 0;
 let snareOverlayMode = 0;
 let hatOverlayMode = 0;
 
+//////////////////////////////////////////////////////////////////////////
+// STYLE SYSTEM
 const styles = ["rand", "lofi", "boom", "dilla", "romil", "dre"];
+let styleIndex = 0; // index into styles[]
 
-function resolveStyle(style) {
-  if (style !== "rand") return style;
-
-  // filter out "rand" so it never picks itself
-  const realStyles = styles.filter(s => s !== "rand");
-
-  const idx = Math.floor(Math.random() * realStyles.length);
-  return realStyles[idx];
-}
-
-let styleIndex = 0;
-
+//////////////////////////////////////////////////////////////////////////
+// RESOLUTION SYSTEM
 const resolutions = [8, 16, 32];
-let resIndex = 1;
+let resIndex = 1; // index into resolutions[]
 
-function switchPage(page) {
-  currentPage = page;
-  kickGrid.classList.add("hidden");
-  snareGrid.classList.add("hidden");
-  hatGrid.classList.add("hidden");
+////////////////////////////////////////////////////////////////////////// Label Functions
 
-  kickBtn.classList.remove("active");
-  snareBtn.classList.remove("active");
-  hatBtn.classList.remove("active");
-
-  if (page === "kick") {
-    kickGrid.classList.remove("hidden");
-    kickBtn.classList.add("active");
-  }
-  if (page === "snare") {
-    snareGrid.classList.remove("hidden");
-    snareBtn.classList.add("active");
-  }
-  if (page === "hat") {
-    hatGrid.classList.remove("hidden");
-    hatBtn.classList.add("active");
-  }
-  kickOverlayMode = 0;
-  snareOverlayMode = 0;
-  hatOverlayMode = 0;
-  updateOverlaps();
-}
-
-function cycleStyle() {
-  styleIndex = (styleIndex + 1) % styles.length;
-  currentStyle = styles[styleIndex];
-  styleBtn.textContent = currentStyle;
-}
-
-function cycleResolution() {
-  resIndex = (resIndex + 1) % resolutions.length;
-  currentRes = resolutions[resIndex];
-  resBtn.textContent = currentRes;
-  updateLabels();
-}
-
+// Works with labels based on resolution choice.
 function updateLabels() {
-  labelColumn.innerHTML = "";
+  const labels = document.querySelectorAll(".labelCell");
 
-  for (let i = 1; i <= 32; i++) {
-    const div = document.createElement("div");
-    div.style.height = "18px";
-
-    const rowIndex = i - 1; // 0–31
+  labels.forEach(label => {
+    const row = parseInt(label.dataset.row, 10);
 
     if (labelMode === "res") {
-      // NUMERIC MODE
-      if (currentRes === 32) {
-        div.textContent = String(i).padStart(2, "0");
-      } else if (currentRes === 16) {
-        // Active rows: 0,2,4,...30
-        if (rowIndex % 2 === 0) {
-          const step16 = rowIndex / 2; // 0–15
-          div.textContent = String(step16).padStart(2, "0");
-        }
-      } else if (currentRes === 8) {
-        // Active rows: 0,4,8,...28
-        if (rowIndex % 4 === 0) {
-          const step8 = rowIndex / 4; // 0–7
-          div.textContent = String(step8).padStart(2, "0");
-        }
-      }
+      // NUMERIC MODE: 1–16
+      label.textContent = String(row + 1).padStart(2, "0");
     } else {
-      // HEX MODE
-      if (currentRes === 32) {
-        // 0–1F
-        div.textContent = rowIndex.toString(16).toUpperCase().padStart(2, "0");
-      } else if (currentRes === 16) {
-        // Active rows: 0,2,4,...30 → hex 0–F
-        if (rowIndex % 2 === 0) {
-          const step16 = rowIndex / 2; // 0–15
-          div.textContent = step16.toString(16).toUpperCase();
-        }
-      } else if (currentRes === 8) {
-        // Active rows: 0,4,8,...28 → hex 0–7
-        if (rowIndex % 4 === 0) {
-          const step8 = rowIndex / 4; // 0–7
-          div.textContent = step8.toString(16).toUpperCase();
-        }
-      }
+      // HEX MODE: 0–F
+      label.textContent = row.toString(16).toUpperCase();
     }
-
-    // Bar dividers stay the same
-    if (i === 8 || i === 16 || i === 24) {
-      div.classList.add("rowDivider");
-    }
-
-    labelColumn.appendChild(div);
-  }
+  });
 }
 
+////////////////////////////////////////////////////////////////////////// Grid Functions
 function createGrid(grid, type) {
   grid.innerHTML = "";
-  for (let row = 1; row <= 32; row++) {
-    for (let col = 1; col <= 4; col++) {
+
+  const ROWS = 16;
+  const COLS = 5; // 1 label + 4 steps
+
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      // --- COLUMN 1: LABEL CELL ---
+      if (col === 0) {
+        const label = document.createElement("div");
+        label.classList.add("labelCell");
+        label.dataset.row = row;
+        label.dataset.col = col;
+        label.textContent = ""; // filled by updateLabels()
+        grid.appendChild(label);
+        continue;
+      }
+
+      // --- COLUMNS 2–5: STEP BUTTONS ---
       const btn = document.createElement("button");
       btn.classList.add("stepBtn");
       btn.dataset.state = "off";
       btn.dataset.type = type;
+      btn.dataset.row = row;
+      btn.dataset.col = col - 1; // 0–3 for your engines
+
+      // 8th-note rows: 0,2,4,6,8,10,12,14
+      if (row % 2 === 0) {
+        btn.classList.add("eighthRow");
+      }
 
       btn.addEventListener("click", () => {
         const state = btn.dataset.state;
+
+        // Reset to base, then re-apply persistent structural classes
         btn.className = "stepBtn";
+        if (row % 2 === 0) {
+          btn.classList.add("eighthRow");
+        }
+        if (row === 3 || row === 7 || row === 11) {
+          btn.classList.add("rowDivider");
+        }
 
         if (state === "off") {
           btn.dataset.state = "on";
@@ -160,12 +117,115 @@ function createGrid(grid, type) {
         updateOverlaps();
       });
 
-      if (row === 8 || row === 16 || row === 24) btn.classList.add("rowDivider");
+      // Bar dividers still apply visually
+      if (row === 3 || row === 7 || row === 11) {
+        btn.classList.add("rowDivider");
+      }
+
       grid.appendChild(btn);
     }
   }
 }
 
+// Fill the grid with notes.
+function randomizeGrid(grid, type) {
+  const buttons = grid.querySelectorAll(".stepBtn");
+  const actualStyle = resolveStyle(currentStyle);
+
+  // "32" steps of resolution always available.
+  const engine = engines[type][actualStyle]["32"];
+
+  // --- Style-based thinning (hat variation lives here) ---
+  const STYLE_THINNING = {
+    lofi: { full: 0.6, ghost: 0.4 },
+    boom: { full: 0.85, ghost: 0.6 },
+    dilla: { full: 0.95, ghost: 0.55 },
+    romil: { full: 0.95, ghost: 0.55 },
+    dre: { full: 0.95, ghost: 0.55 },
+  };
+
+  const thin = STYLE_THINNING[currentStyle] || { full: 1, ghost: 1 };
+
+  // --- Core probabilities ---
+  const FULL_HIT_PROB = 0.8;
+  const FULL_HIT_PROB_NOT = 0.6;
+  const EQUAL_PROB = 0.3;
+  const GHOST_PROB = 0.6;
+
+  buttons.forEach(btn => {
+    // Reset button state (but keep structural classes like eighthRow/rowDivider)
+    btn.dataset.state = "off";
+    btn.classList.remove(type + "On", type + "Ghost");
+
+    const row = parseInt(btn.dataset.row, 10); // 0–15 (16th notes)
+
+    // Map row 0–15 → engine indices 0,2,4,...,30
+    const engineIndex = row * 2; // 0,2,4,...,30
+
+    const expect = engine[engineIndex] || 0;
+
+    // 0 → always blank
+    if (expect === 0) return;
+
+    // --- 1 → full hit expected ---
+    if (expect === 1) {
+      const full1 = Math.random() < FULL_HIT_PROB;
+      const full2 = Math.random() < FULL_HIT_PROB;
+
+      if ((full1 || full2) && Math.random() < thin.full) {
+        btn.dataset.state = "on";
+        btn.classList.add(type + "On");
+        return;
+      }
+
+      if (Math.random() < FULL_HIT_PROB_NOT && Math.random() < thin.ghost) {
+        btn.dataset.state = "ghost";
+        btn.classList.add(type + "Ghost");
+        return;
+      }
+
+      return;
+    }
+
+    // --- 1.5 → equal chance full / ghost / blank ---
+    if (expect === 1.5) {
+      if (Math.random() < EQUAL_PROB && Math.random() < thin.full) {
+        btn.dataset.state = "on";
+        btn.classList.add(type + "On");
+        return;
+      }
+
+      if (Math.random() < EQUAL_PROB && Math.random() < thin.ghost) {
+        btn.dataset.state = "ghost";
+        btn.classList.add(type + "Ghost");
+        return;
+      }
+
+      return;
+    }
+
+    // --- 0.5 → ghost expected ---
+    if (expect === 0.5) {
+      const blank1 = Math.random() < GHOST_PROB;
+      const blank2 = Math.random() < GHOST_PROB;
+
+      if (blank1 || blank2) return;
+
+      if (Math.random() < thin.ghost) {
+        btn.dataset.state = "ghost";
+        btn.classList.add(type + "Ghost");
+      }
+
+      return;
+    }
+  });
+
+  updateOverlaps();
+}
+
+////////////////////////////////////////////////////////////////////////// Utility Functions
+
+// Shows overlaps
 function getGridStates() {
   const kickBtns = document.querySelectorAll("#kickGrid .stepBtn");
   const snareBtns = document.querySelectorAll("#snareGrid .stepBtn");
@@ -186,6 +246,7 @@ function getGridStates() {
   return { kick, snare, hat, kickBtns, snareBtns, hatBtns };
 }
 
+// Controls my overlap engine for display border colors
 function updateOverlaps() {
   const { kick, snare, hat, kickBtns, snareBtns, hatBtns } = getGridStates();
 
@@ -276,101 +337,58 @@ function updateOverlaps() {
   }
 }
 
-// Engines for each instrument, style, and resolution
-//////// Sent to engines.js
+////////////////////////////////////////////////////////////////////////// Style Functions
 
-function randomizeGrid(grid, type) {
-  const buttons = grid.querySelectorAll(".stepBtn");
-  const actualStyle = resolveStyle(currentStyle);
-  const engine = engines[type][actualStyle][String(currentRes)];
+// Works with style button. Picks a random style if random is the selection.
+function resolveStyle(style) {
+  if (style !== "rand") return style;
 
-  // --- Style-based thinning (hat variation lives here) ---
-  const STYLE_THINNING = {
-    lofi: { full: 0.6, ghost: 0.4 },
-    boom: { full: 0.85, ghost: 0.6 },
-    dilla: { full: 0.95, ghost: 0.55 },
-    romil: { full: 0.95, ghost: 0.55 },
-    dre: { full: 0.95, ghost: 0.55 },
-  };
+  // filter out "rand" so it never picks itself
+  const realStyles = styles.filter(s => s !== "rand");
 
-  const thin = STYLE_THINNING[currentStyle] || { full: 1, ghost: 1 };
+  const idx = Math.floor(Math.random() * realStyles.length);
+  return realStyles[idx];
+}
 
-  // --- Core probabilities ---
-  const FULL_HIT_PROB = 0.8;
-  const FULL_HIT_PROB_NOT = 0.6;
-  const EQUAL_PROB = 0.3;
-  const GHOST_PROB = 0.6;
+// Works with style button.
+function cycleStyle() {
+  styleIndex = (styleIndex + 1) % styles.length;
+  currentStyle = styles[styleIndex];
+  styleBtn.textContent = currentStyle;
+}
 
-  buttons.forEach((btn, idx) => {
-    btn.dataset.state = "off";
-    btn.classList.remove(type + "On", type + "Ghost");
-    btn.classList.add("stepBtn");
+////////////////////////////////////////////////////////////////////////// Page Functions
 
-    const col = idx % 4;
-    const row = Math.floor(idx / 4);
-    const stepIndex = row + col * 32;
-    const stepInBar = stepIndex % 32;
+// Works with page buttons and navigation bar.
+function switchPage(page) {
+  currentPage = page;
+  kickGrid.classList.add("hidden");
+  snareGrid.classList.add("hidden");
+  hatGrid.classList.add("hidden");
 
-    const expect = engine[stepInBar] || 0;
+  kickBtn.classList.remove("active");
+  snareBtn.classList.remove("active");
+  hatBtn.classList.remove("active");
 
-    // 0 → always blank
-    if (expect === 0) return;
-
-    // --- 1 → full hit expected ---
-    if (expect === 1) {
-      const full1 = Math.random() < FULL_HIT_PROB;
-      const full2 = Math.random() < FULL_HIT_PROB;
-
-      if ((full1 || full2) && Math.random() < thin.full) {
-        btn.dataset.state = "on";
-        btn.classList.add(type + "On");
-        return;
-      }
-
-      if (Math.random() < FULL_HIT_PROB_NOT && Math.random() < thin.ghost) {
-        btn.dataset.state = "ghost";
-        btn.classList.add(type + "Ghost");
-        return;
-      }
-
-      return;
-    }
-
-    // --- 1.5 → equal chance full / ghost / blank ---
-    if (expect === 1.5) {
-      if (Math.random() < EQUAL_PROB && Math.random() < thin.full) {
-        btn.dataset.state = "on";
-        btn.classList.add(type + "On");
-        return;
-      }
-
-      if (Math.random() < EQUAL_PROB && Math.random() < thin.ghost) {
-        btn.dataset.state = "ghost";
-        btn.classList.add(type + "Ghost");
-        return;
-      }
-
-      return;
-    }
-
-    // --- 0.5 → ghost expected ---
-    if (expect === 0.5) {
-      const blank1 = Math.random() < GHOST_PROB;
-      const blank2 = Math.random() < GHOST_PROB;
-
-      if (blank1 || blank2) return;
-
-      if (Math.random() < thin.ghost) {
-        btn.dataset.state = "ghost";
-        btn.classList.add(type + "Ghost");
-      }
-
-      return;
-    }
-  });
+  if (page === "kick") {
+    kickGrid.classList.remove("hidden");
+    kickBtn.classList.add("active");
+  }
+  if (page === "snare") {
+    snareGrid.classList.remove("hidden");
+    snareBtn.classList.add("active");
+  }
+  if (page === "hat") {
+    hatGrid.classList.remove("hidden");
+    hatBtn.classList.add("active");
+  }
+  kickOverlayMode = 0;
+  snareOverlayMode = 0;
+  hatOverlayMode = 0;
   updateOverlaps();
 }
 
+////////////////////////////////////////////////////////////////////////// Buttons
 kickBtn.addEventListener("click", () => {
   if (currentPage === "kick") {
     kickOverlayMode = (kickOverlayMode + 1) % 4;
@@ -402,12 +420,6 @@ hatBtn.addEventListener("click", () => {
 });
 
 styleBtn.addEventListener("click", cycleStyle);
-resBtn.addEventListener("click", cycleResolution);
-
-labelColumn.addEventListener("click", () => {
-  labelMode = labelMode === "res" ? "hex" : "res";
-  updateLabels();
-});
 
 playBtn.addEventListener("click", () => {
   if (currentPage === "kick") randomizeGrid(kickGrid, "kick");
@@ -421,3 +433,10 @@ createGrid(hatGrid, "hat");
 
 switchPage("kick");
 updateLabels();
+
+document.addEventListener("click", e => {
+  if (!e.target.classList.contains("labelCell")) return;
+
+  labelMode = labelMode === "res" ? "hex" : "res";
+  updateLabels();
+});
