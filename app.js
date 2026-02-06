@@ -13,7 +13,7 @@ const hatGrid = document.getElementById("hatGrid");
 const labelColumn = document.getElementById("labelColumn");
 
 let currentPage = "kick";
-let currentStyle = "lofi";
+let currentStyle = "rand";
 let currentRes = 16;
 let labelMode = "res";
 
@@ -21,7 +21,18 @@ let kickOverlayMode = 0;
 let snareOverlayMode = 0;
 let hatOverlayMode = 0;
 
-const styles = ["lofi", "boom", "dilla"];
+const styles = ["rand", "lofi", "boom", "dilla", "romil", "dre"];
+
+function resolveStyle(style) {
+  if (style !== "rand") return style;
+
+  // filter out "rand" so it never picks itself
+  const realStyles = styles.filter(s => s !== "rand");
+
+  const idx = Math.floor(Math.random() * realStyles.length);
+  return realStyles[idx];
+}
+
 let styleIndex = 0;
 
 const resolutions = [8, 16, 32];
@@ -70,20 +81,55 @@ function cycleResolution() {
 
 function updateLabels() {
   labelColumn.innerHTML = "";
+
   for (let i = 1; i <= 32; i++) {
     const div = document.createElement("div");
     div.style.height = "18px";
 
+    const rowIndex = i - 1; // 0–31
+
     if (labelMode === "res") {
-      if (currentRes === 32) div.textContent = String(i).padStart(2, "0");
-      if (currentRes === 16 && i % 2 === 1) div.textContent = String((i + 1) / 2).padStart(2, "0");
-      if (currentRes === 8 && (i - 1) % 4 === 0) div.textContent = String((i + 3) / 4).padStart(2, "0");
+      // NUMERIC MODE
+      if (currentRes === 32) {
+        div.textContent = String(i).padStart(2, "0");
+      } else if (currentRes === 16) {
+        // Active rows: 0,2,4,...30
+        if (rowIndex % 2 === 0) {
+          const step16 = rowIndex / 2; // 0–15
+          div.textContent = String(step16).padStart(2, "0");
+        }
+      } else if (currentRes === 8) {
+        // Active rows: 0,4,8,...28
+        if (rowIndex % 4 === 0) {
+          const step8 = rowIndex / 4; // 0–7
+          div.textContent = String(step8).padStart(2, "0");
+        }
+      }
     } else {
-      const hex = ((i - 1) % 16).toString(16).toUpperCase();
-      div.textContent = hex;
+      // HEX MODE
+      if (currentRes === 32) {
+        // 0–1F
+        div.textContent = rowIndex.toString(16).toUpperCase().padStart(2, "0");
+      } else if (currentRes === 16) {
+        // Active rows: 0,2,4,...30 → hex 0–F
+        if (rowIndex % 2 === 0) {
+          const step16 = rowIndex / 2; // 0–15
+          div.textContent = step16.toString(16).toUpperCase();
+        }
+      } else if (currentRes === 8) {
+        // Active rows: 0,4,8,...28 → hex 0–7
+        if (rowIndex % 4 === 0) {
+          const step8 = rowIndex / 4; // 0–7
+          div.textContent = step8.toString(16).toUpperCase();
+        }
+      }
     }
 
-    if (i === 8 || i === 16 || i === 24) div.classList.add("rowDivider");
+    // Bar dividers stay the same
+    if (i === 8 || i === 16 || i === 24) {
+      div.classList.add("rowDivider");
+    }
+
     labelColumn.appendChild(div);
   }
 }
@@ -230,6 +276,101 @@ function updateOverlaps() {
   }
 }
 
+// 0.5 → ghost‑only
+// never a full kick
+// never a sub
+// only a ghost or blank
+// used when the style says “sometimes a ghost here, but NEVER a full kick”
+
+// 1 → full kick
+// this is a real, intentional thump
+// the style says “this is basically always a kick”
+
+// 1.5 → full‑kick‑leaning
+// the generator will usually place a full kick here
+// sometimes a ghost
+// rarely blank
+// used when the style says “we like a kick here sometimes, but want variation”
+
+// 0 → blank
+// “don’t touch this spot”
+
+// TIMING NOTE:
+// Even though this generator is fully quantized (32-step grid),
+// these styles are written with IMPLIED micro-timing in mind.
+//
+// If this ever gains timing offset support:
+//
+// - "early" means slightly ahead of grid
+// - "late" means slightly behind grid
+// - "drunk" means inconsistent, mostly late
+//
+// These comments describe HUMAN FEEL, not current implementation.
+
+// LOFI TIMING INTENT:
+// Kick: slightly late on optional hits, downbeat steady
+// Snare: consistently late (laid-back)
+// Hats: lazy, behind the grid
+//
+// Goal: sleepy pocket, head-nod, nothing urgent.
+// Think: everything leans backward.
+
+// BOOM BAP TIMING INTENT:
+// Kick: mostly on-grid, occasional early syncopation
+// Snare: dead center or barely late
+// Hats: straight, mechanical, very small swing if any
+//
+// Goal: tight pocket, classic NY feel.
+// Think: drummer locked to MPC.
+
+// DILLA TIMING INTENT:
+// Kick: inconsistent, some early, some late
+// Snare: intentionally late, sometimes VERY late
+// Hats: chaotic, uneven, drunken
+//
+// Goal: broken pocket.
+// Think: limbs arguing with each other.
+
+// WEST COAST TIMING INTENT:
+// Kick: on-grid or slightly early
+// Snare: clean, centered
+// Hats: tight and forward
+//
+// Goal: bounce and clarity.
+// Think: driving groove, not sleepy.
+
+// ROMIL TIMING INTENT:
+// Kick: tight, modern, mostly on-grid
+// Snare/clap: sharp, centered
+// Hats: very tight with occasional rapid bursts
+//
+// Goal: polished bounce.
+// Think: digital precision with small roll accents.
+
+// DIRTY SOUTH TIMING INTENT:
+// Kick: aggressive, sometimes early
+// Snare: strong, slightly early or centered
+// Hats: driving, energetic
+//
+// Goal: forward momentum.
+// Think: club energy.
+
+// MEMPHIS TIMING INTENT:
+// Kick: heavy, often late
+// Snare: dragged
+// Hats: minimal or dark
+//
+// Goal: ominous slow pull.
+// Think: everything sinking.
+
+// GRIMY TIMING INTENT:
+// Kick: loose but intentional
+// Snare: hard and centered
+// Hats: sparse
+//
+// Goal: raw, unpolished.
+// Think: basement beats.
+
 // Engines for each instrument, style, and resolution
 // prettier-ignore
 const engines = {
@@ -237,21 +378,21 @@ const engines = {
     lofi: {
       32: [
         // ---- Beat 1 (steps 0–7) ----
-        1,0,0,0, 0,0,0,0,
+        1,0,0,0, 0,0.5,0,0,
         // Lofi almost always starts with a kick on 1
         // No syncopation, no chatter
 
         // ---- Beat 2 (steps 8–15) ----
-        0,0,0,0, 0,0,0,0,
+        0.5,0,0.5,0, 0.5,0,0.5,0,
         // Lofi rarely places a kick on beat 2
 
         // ---- Beat 3 (steps 16–23) ----
-        1.5,0,0,0, 0,0,0,0,
+        0.5,0,1.5,0, 0,0.5,0,0,
         // Beat 3 is the “optional” lofi kick
         // 1.5 = could be full, ghost, or blank → perfect for lofi looseness
 
         // ---- Beat 4 (steps 24–31) ----
-        0,0,0,0, 0,0,0,0
+        0.5,0,0,0.5, 0,0,0,0.5
         // Lofi almost never hits on 4
       ],
       16: [],
@@ -261,19 +402,19 @@ const engines = {
       32: [
         // ---- Beat 1 (steps 0–7) ----
         1, 0.5, 1.5, 0.5,   // 0–3: strong 1, syncopation on the "e"
-        1.5, 0.5, 1.5, 0.5, // 4–7: classic boom-bap 16th-note kick grid
+        0.5, 0, 0, 0, // 4–7: classic boom-bap 16th-note kick grid
 
         // ---- Beat 2 (steps 8–15) ----
-        0, 0.5, 1.5, 0.5,   // 8–11: avoid kick on 9 (step 8), syncopation after
-        1.5, 0.5, 1.5, 0.5, // 12–15: busy but pocketed
+        0, 0, 1.5, 0.5,   // 8–11: avoid kick on 9 (step 8), syncopation after
+        0, 0, 0, 0, // 12–15: busy but pocketed
 
         // ---- Beat 3 (steps 16–23) ----
         1, 0.5, 1.5, 0.5,   // 16–19: strong kick on beat 3
-        1.5, 0.5, 1.5, 0.5, // 20–23: syncopation grid
+        0.5, 0, 0, 0, // 20–23: syncopation grid
 
         // ---- Beat 4 (steps 24–31) ----
-        0, 0.5, 1.5, 0.5,   // 24–27: avoid kick on 25 (step 24)
-        1.5, 0.5, 1.5, 0.5  // 28–31: end-of-bar syncopation
+        0, 0, 1.5, 0.5,   // 24–27: avoid kick on 25 (step 24)
+        0, 0, 0, 0  // 28–31: end-of-bar syncopation
       ],
       16: [],
       8: [],
@@ -281,20 +422,20 @@ const engines = {
     dilla: {
       32: [
         // ---- Beat 1 (steps 0–7) ----
-        1, 0.5, 0.5, 0.5,   // 0–3: strong 1, but everything after is loose
-        0.5, 0.5, 0.5, 0.5, // 4–7: Dilla’s “drunken” early-bar kicks
+        1, 0.5, 1.5, 0.5,   // 0–3: strong 1, but everything after is loose
+        0.5, 0.5, 1.5, 0.5, // 4–7: Dilla’s “drunken” early-bar kicks
 
         // ---- Beat 2 (steps 8–15) ----
-        0, 0.5, 0.5, 0.5,   // 8–11: often NO kick on 9, but lots of ghost options
-        0.5, 0.5, 0.5, 0.5, // 12–15: Dilla’s mid-bar swing zone
+        0.5, 0.5, 1.5, 0.5,   // 8–11: often NO kick on 9, but lots of ghost options
+        0.5, 1.5, 0.5, 1.5, // 12–15: Dilla’s mid-bar swing zone
 
         // ---- Beat 3 (steps 16–23) ----
-        1, 0.5, 1, 0.5,     // 16–19: displaced kicks, sometimes doubled
-        0.5, 0.5, 0.5, 0.5, // 20–23: ghost-heavy lead-in
+        1, 0.5, 1.5, 0.5,     // 16–19: displaced kicks, sometimes doubled
+        0.5, 1.5, 0.5, 1.5, // 20–23: ghost-heavy lead-in
 
         // ---- Beat 4 (steps 24–31) ----
-        0.5, 0.5, 0.5, 0.5, // 24–27: Dilla often avoids a strong 4
-        1, 0.5, 0.5, 0.5    // 28–31: late-bar anchor kick
+        0.5, 0.5, 1.5, 0.5, // 24–27: Dilla often avoids a strong 4
+        1.5, 0.5, 1, 0.5    // 28–31: late-bar anchor kick
       ],
       16: [],
       8: [],
@@ -303,31 +444,31 @@ const engines = {
       32: [
         // ---- Beat 1 (steps 0–7) ----
         1, 0, 0, 0,      // 0–3: strong downbeat
-        0, 0.5, 0, 0,    // 4–7: ghost-only pickup after the upbeat (NEVER a full kick)
+        0.5, 0, 0, 0,    // 4–7: ghost-only pickup after the upbeat (NEVER a full kick)
 
         // ---- Beat 2 (steps 8–15) ----
         0, 0, 1, 0,      // 8–11: real syncopated kick on step 10
-        0, 0, 0, 0,      // 12–15: leave space (Romil does this a lot)
+        0, 0, 0.5, 0,      // 12–15: leave space (Romil does this a lot)
 
         // ---- Beat 3 (steps 16–23) ----
-        0.5, 0, 0, 0,    // 16–19: ghost-only early pickup (never a full kick)
-        0, 1, 0, 0,      // 20–23: real upbeat kick on step 20
+        1, 0, 0, 0,    // 16–19: ghost-only early pickup (never a full kick)
+        0.5, 0, 0, 0,      // 20–23: real upbeat kick on step 20
 
         // ---- Beat 4 (steps 24–31) ----
         0, 0, 1, 0,      // 24–27: real late-bar kick on step 26
-        0, 0, 0, 0       // 28–31: clean tail
+        0, 0, 0.5, 0       // 28–31: clean tail
       ],
       16: [],
       8: [],
     },
-    westcoast: {
+    dre: {
       32: [
         // ---- Beat 1 (steps 0–7) ----
         1, 0, 0, 0,      // 0–3: strong downbeat
-        1, 0, 0, 0,      // 4–7: upbeat 8th on step 4 (classic bounce)
+        0, 0, 0, 0,      // 4–7: upbeat 8th on step 4 (classic bounce)
 
         // ---- Beat 2 (steps 8–15) ----
-        0, 0, 1, 0,      // 8–11: mid‑bar kick on the “&” of 2 (step 10)
+        0, 0, 1.5, 0,      // 8–11: mid‑bar kick on the “&” of 2 (step 10)
         0, 0, 0, 0,      // 12–15: leave space for snare + bass
 
         // ---- Beat 3 (steps 16–23) ----
@@ -335,7 +476,7 @@ const engines = {
         1, 0, 0, 0,      // 20–23: upbeat 8th on step 20
 
         // ---- Beat 4 (steps 24–31) ----
-        0, 0, 1, 0,      // 24–27: syncopated kick on step 26
+        0, 0, 1.5, 0,      // 24–27: syncopated kick on step 26
         0, 0, 0, 0       // 28–31: clean tail
       ],
       16: [],
@@ -368,20 +509,20 @@ const engines = {
     boom: {
       32: [
         // ---- Beat 1 (steps 0–7) ----
-        0, 0, 0, 0,     // 0–3: NEVER ghost here (between kicks)
+        0, 0, 0.5, 0.5,     // 0–3: NEVER ghost here (between kicks)
         0, 0, 0.5, 0.5, // 4–7: lead-in ghosts into snare on 8
 
         // ---- Beat 2 (steps 8–15) ----
-        1, 0.5, 0, 0,   // 8–11: snare on 8, optional ghost after
-        0, 0, 0, 0,     // 12–15: usually blank
+        1, 0.5, 0.5, 1.5,   // 8–11: snare on 8, optional ghost after
+        0, 0, 0.5, 0.5,     // 12–15: usually blank
 
         // ---- Beat 3 (steps 16–23) ----
-        0, 0, 0, 0,     // 16–19: no ghosts here
+        0, 0, 0.5, 0.5,     // 16–19: no ghosts here
         0, 0, 0.5, 0.5, // 20–23: lead-in ghosts into snare on 24
 
         // ---- Beat 4 (steps 24–31) ----
-        1, 0.5, 0, 0,   // 24–27: snare on 24, optional ghost after
-        0, 0, 0, 0      // 28–31: usually blank
+        1, 0.5, 0.5, 1.5,   // 24–27: snare on 24, optional ghost after
+        0, 0, 0.5, 0.5      // 28–31: usually blank
       ],
       16: [],
       8: [],
@@ -393,16 +534,16 @@ const engines = {
         0.5, 0.5, 0.5, 0.5, // 4–7: more ghost chatter leading into 8
 
         // ---- Beat 2 (steps 8–15) ----
-        1, 0.5, 0.5, 0.5,   // 8–11: snare on 8, but often LATE → ghost cluster after
-        1, 0.5, 0.5, 0.5,   // 12–15: Dilla sometimes doubles the backbeat feel
+        1, 1.5, 0.5, 0.5,   // 8–11: snare on 8, but often LATE → ghost cluster after
+        0.5, 0.5, 0.5, 0.5,   // 12–15: Dilla sometimes doubles the backbeat feel
 
         // ---- Beat 3 (steps 16–23) ----
         0, 0.5, 0.5, 0.5,   // 16–19: ghosty lead-in to 24
         0.5, 0.5, 0.5, 0.5, // 20–23: heavy ghost zone before snare on 24
 
         // ---- Beat 4 (steps 24–31) ----
-        1, 0.5, 0.5, 0.5,   // 24–27: snare on 24, again often LATE
-        1, 0.5, 0.5, 0.5    // 28–31: Dilla sometimes drags into the next bar
+        1, 0.5, 1.5, 0.5,   // 24–27: snare on 24, again often LATE
+        0.5, 0.5, 1.5, 0.5    // 28–31: Dilla sometimes drags into the next bar
       ],
       16: [],
       8: [],
@@ -411,40 +552,40 @@ const engines = {
       32: [
         // ---- Beat 1 (steps 0–7) ----
         0, 0, 0, 0,      // 0–3: no early snares
-        1, 0, 0, 0,      // 4–7: snare on beat 2 (clean, modern)
+        0.5, 0, 0, 0,      // 4–7: snare on beat 2 (clean, modern)
 
         // ---- Beat 2 (steps 8–15) ----
-        0, 0, 0, 0,      // 8–11: space for melodic kicks
-        0, 0, 1, 0,      // 12–15: snare on beat 4
+        1, 1.5, 0, 0,      // 8–11: space for melodic kicks
+        0, 0, 0, 0,      // 12–15: snare on beat 4
 
         // ---- Beat 3 (steps 16–23) ----
         0, 0, 0, 0,      // 16–19: repeat structure for consistency
-        1, 0, 0, 0,      // 20–23: snare on beat 2 (bar 2 feel)
+        0.5, 0, 0, 0,      // 20–23: snare on beat 2 (bar 2 feel)
 
         // ---- Beat 4 (steps 24–31) ----
-        0, 0, 0, 0,      // 24–27: space before final snare
-        0, 1.5, 1, 0     // 28–31: ghost → flam → snare on beat 4
+        1, 1.5, 0, 0,      // 24–27: space before final snare
+        0, 0, 1, 0     // 28–31: ghost → flam → snare on beat 4
       ],
       16: [],
       8: [],
     },
-    westcoast: {
+    dre: {
       32: [
         // ---- Beat 1 (steps 0–7) ----
         0, 0, 0, 0,      // 0–3: no early snare
-        1, 0, 0, 0,      // 4–7: snare on beat 2 (tight, bright)
+        0, 0, 0, 0,      // 4–7: snare on beat 2 (tight, bright)
 
         // ---- Beat 2 (steps 8–15) ----
-        0, 0, 0, 0,      // 8–11: clean pocket
-        0, 0, 1, 0,      // 12–15: snare on beat 4
+        1, 0.5, 0, 0,      // 8–11: clean pocket
+        0, 0, 0, 0,      // 12–15: snare on beat 4
 
         // ---- Beat 3 (steps 16–23) ----
         0, 0, 0, 0,      // 16–19: repeat structure
-        1, 0, 0, 0,      // 20–23: snare on beat 2 (bar 2 feel)
+        0, 0, 0, 0,      // 20–23: snare on beat 2 (bar 2 feel)
 
         // ---- Beat 4 (steps 24–31) ----
-        0, 0, 0, 0,      // 24–27: no ghosting (West Coast stays clean)
-        0, 0, 1, 0       // 28–31: snare on beat 4, no flam
+        1, 0.5, 0, 0,      // 24–27: no ghosting (West Coast stays clean)
+        0, 0, 0, 0       // 28–31: snare on beat 4, no flam
       ],
       16: [],
       8: [],
@@ -454,10 +595,10 @@ const engines = {
     lofi: {
       32: [
         // 8th-note lazy hats: hits on 0,4,8,12,16,20,24,28
-        0.5,0,0,0, 0.5,0,0,0,
-        0.5,0,0,0, 0.5,0,0,0,
-        0.5,0,0,0, 0.5,0,0,0,
-        0.5,0,0,0, 0.5,0,0,0
+        0.5,0,0.5,0, 0.5,0,0.5,0,
+        0.5,0,0.5,0, 0.5,0,0.5,0,
+        0.5,0,0.5,0, 0.5,0,0.5,0,
+        0.5,0,0.5,0, 0.5,0,0.5,0
       ],
       16: [],
       8: [],
@@ -488,25 +629,25 @@ const engines = {
     romil: {
       32: [
         // ---- Beat 1 (steps 0–7) ----
-        1, 0, 1, 0.5,    // 0–3: clean 16ths w/ ghost option
-        1, 0, 1.5, 0,    // 4–7: modern roll potential
+        1, 0.5, 1.5, 0.5,    // 0–3: clean 16ths w/ ghost option
+        1, 0.5, 1.5, 0.5,    // 4–7: modern roll potential
 
         // ---- Beat 2 (steps 8–15) ----
-        1, 0, 1, 0.5,    // 8–11: consistent but not rigid
-        1, 0, 1.5, 0,    // 12–15: tasteful 32nd ghost
+        1, 0.5, 1.5, 0.5,    // 8–11: consistent but not rigid
+        1, 0.5, 1.5, 0.5,    // 12–15: tasteful 32nd ghost
 
         // ---- Beat 3 (steps 16–23) ----
-        1, 0, 1, 0.5,    // 16–19: repeat the groove
-        1, 0, 1.5, 0,    // 20–23: subtle variation
+        1, 0.5, 1.5, 0.5,    // 16–19: repeat the groove
+        1, 0.5, 1.5, 0.5,    // 20–23: subtle variation
 
         // ---- Beat 4 (steps 24–31) ----
-        1, 0, 1, 0.5,    // 24–27: keep the modern feel
-        1, 0, 1.5, 0     // 28–31: final ghost option
+        1, 0.5, 1.5, 0.5,    // 24–27: keep the modern feel
+        1, 0.5, 1.5, 0.5     // 28–31: final ghost option
       ],
       16: [],
       8: [],
     },
-    westcoast: {
+    dre: {
       32: [
         // ---- Beat 1 (steps 0–7) ----
         1, 0, 1, 0,      // 0–3: straight 16ths, no ghosts
@@ -560,13 +701,16 @@ deriveResolutionMaps();
 
 function randomizeGrid(grid, type) {
   const buttons = grid.querySelectorAll(".stepBtn");
-  const engine = engines[type][currentStyle][String(currentRes)];
+  const actualStyle = resolveStyle(currentStyle);
+  const engine = engines[type][actualStyle][String(currentRes)];
 
   // --- Style-based thinning (hat variation lives here) ---
   const STYLE_THINNING = {
     lofi: { full: 0.6, ghost: 0.4 },
     boom: { full: 0.85, ghost: 0.6 },
     dilla: { full: 0.95, ghost: 0.55 },
+    romil: { full: 0.95, ghost: 0.55 },
+    dre: { full: 0.95, ghost: 0.55 },
   };
 
   const thin = STYLE_THINNING[currentStyle] || { full: 1, ghost: 1 };
